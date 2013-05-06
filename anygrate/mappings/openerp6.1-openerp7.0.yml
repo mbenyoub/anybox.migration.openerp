@@ -64,17 +64,145 @@ base:
         res_company.logo_web:
     res_company.rml_footer1:
         res_company.rml_footer:
-    
-    # Tables de jointures 
-    res_groups_users_rel.*:
-    res_company_users_rel.*:
-    res_partner_category_rel.*:
-    res_groups_implied_rel.*:
 
 # Module mail
 mail:
+    mail.*:
+    ir_ui_menu.mail_group_id:
+        ir_ui_menu.mail_group_id:
+        mail_group.mail_group_ids:
+    mail_alias.alias_defaults:
+        mail_alias.alias_defaults: # new (text) required: required, req_default: {}
+    mail_alias.id:
+        mail_alias.id:
+        mail_alias.alias_force_thread_id: #new, interger
+    mail_alias.alias_model_id:
+        mail_alias.alias_model_id:
+        ir_model.alias_model_ids:  # required
+    mail_alias.alias_name:
+        mail_alias.alias_name:     # required
+    mail_alias.alias_user_id:  
+        mail_alias.alias_user_id:
+        res_users.alias_user_ids:
+    mail_followers.partner_id:
+        mail_followers.partner_id:
+        res_partner.partner_ids:
+    mail_followers.id:
+        mail_followers.id:
+        mail_followers.res_id:
+    mail_followers.res_model:
+        mail_followers.res_model:   # required
+    mail_followers.subtype_ids:
+        mail_followers.subtype_ids:
+        mail_message_subtype.subtype_ids:
+    mail_group.id:
+        mail_group.id:
+        mail_group._inherits:
+        mail_group.description:     # new, text
+        mail_group.image:           #new, binary
+    mail_group.alias_id:
+        mail_group.alias_id:
+        mail_alias.alias_ids:
+    mail_group.group_ids:
+        mail_group.group_ids:
+        res_groups.group_ids:
+    mail_group.group_public_id:
+        mail_group.group_public_id:
+        res_groups.group_public_id:
+    mail_group.menu_id:
+        mail_group.menu_id:
+        ir_ui_menu.menu_ids:
+    mail_group.message_ids:
+        mail_group.message_ids:
+        mail_message.message_id:
+    mail_group.name:
+        mail_group.name:        # required
+    mail_group.public:
+        mail_group.public: return 'groups'     # new, required, selection_keys: ['groups', 'private', 'public']
+    mail_mail.id:
+        mail_mail.id:
+        mail_mail._inherits: return false      # new, false
+        mail_mail.auto_delete:  # new, boolean
+        mail_mail.body_html:    # new, text
+        mail_mail.email_cc:     # new, char
+        mail_mail.email_from:   # new, char
+        mail_mail.email_to:     # new, char
+        mail_mail.notification: # new, boolean
+        mail_mail.references:   # new, text
+        mail_mail.reply_to:     # new, char
+    mail_mail.mail_message_id:
+        mail_mail.mail_message_id:
+        mail_message.mail_message_id:
+    mail_mail.mail_server_id:
+        mail_mail.mail_server_id:
+        ir_mail_server.mail_server_id:
+    mail_mail.state:
+        mail_mail.state:    # selection_keys: ['cancel', 'exception', 'outgoing', 'received', 'sent']
+    mail_message.attachment_ids:
+        mail_message.attachment_ids:
+        ir_attachment.attachment_ids:
+    mail_message.author_id:
+        mail_message.author_id:
+        res_partner.author_ids:
+    mail_message.id:
+        mail_message.id:
+        mail_message.body:          # new, html
+        mail_message.date:          # new, datetim
+        mail_message.email:         # new, char
+        mail_message.message_id:    # new, char
+        mail_message.model:         # new, char
+        mail_message.res_id:        # new, integer
+        mail_message.subject:       # new, char
+    mail_message.child_ids:
+        mail_message.child_ids:
+        mail.message.child_id:
+    mail_message.notification_ids:
+        mail_message.notification_ids:
+        mail_notification.notification_id:
+    mail_message.notified_partner_ids:
+        mail_message.notified_partner_ids:
+        res_partner.notified_partner_id:
+    mail_message.parent_id:
+        mail_message.parent_id:
+        mail_message.parent_ids:
+    mail_message.partner_ids:
+        mail_message.partner_ids:
+        res_partner.partner_id:
+    mail_message.subtype_id:
+        mail_message.subtype_id:
+        mail_message_subtype.subtype_id: 
+    mail_message.type:
+        mail_message.type:          # new selection_keys: ['comment', 'email', 'notification']
+    mail_message.vote_user_ids:
+        mail_message.vote_user_ids:
+        res_users.vote_user_ids:
+    mail_message_subtype.id:
+        mail_message_subtype.id:
+        mail_message_subtype.default:   # new, boolean
+        mail_message_subtype.name:      # new, required
+        mail_message_subtype.res_model: # new, char
+    mail_notification.message_id:
+        mail_notification.message_id:
+        mail_notification.read:         # new, boolean
+        mail_notification.starred:      # new, boolean
+        mail_message.message_ids:
+    mail_notification.partner_id:
+        mail_notification.partner_id:
+        res_partner.partner_ids:
+    res_partner.emails:
+        res_partner.emails:             # DEL relation: mail.message
+    res_partner.message_ids:
+        res_partner.message_ids:
+        mail_message.message_id:
+    res_partner.notification_email_send:
+        res_partner.notification_email_send:    # new required: required, selection_keys: ['all', 'comment', 'email', 'none']
+    res_users._inherits:
+        res_users._inherits:            # new mode: modify   (False) A verifier
+    res_users.alias_id:
+        res_users.alias_id:
+        mail_alais.alias_id: 
     res_users.login:
-        mail_alias.alias: return source_row['login']
+        mail_alias.alias_name: return source_row['login']
 
 # Module account 
 account:
@@ -346,7 +474,6 @@ sale:
     sale_order_line.address_allotment_id:
         sale_order_line.address_allotment_id:
         res_partner.address_allotment_ids:
-    address_allotment_id:
     sale_order_line.delay:
         sale_order_line.delay:
         sale_stock.delay:
@@ -494,22 +621,135 @@ stock:
     stock_picking_in.company_id:
         stock_picking_in.company_id:
         res_company.company_ids:
+
+# module point_of_sale
+point_of_sale:    
+    point_of_sale.*:
+    account_bank_statement.pos_session_id:
+        account_bank_statement.pos_session_id:
+        pos_session.pos_session_ids:
+    account_bank_statement_line.journal_id:
+        account_bank_statement_line.journal_id: # DEL mode: modify
         
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
+        account_journal.amount_authorized_diff: # new, float
+        account_journal.self_checkout_payment_method:   #new, boolean
+        pos_category.image:     #new, binary
+        pos_config.group_by:    #new, boolean
+        pos_config.iface_cashdrawer:    #new, boolean
+        pos_config.iface_electronic_scale: #new, boolean
+        pos_config.iface_payment_terminal: #new, booolean
+        pos_config.iface_print_via_proxy:  #new, boolean
+        pos_config.iface_self_checkout: #new, boolean
+        pos_config.iface_vkeyboard:     #new, boolean
+        pos_config.journal_id:
+            pos_config.journal_id:
+            account_journal.journal_ids:
+        pos_config.journal_ids:
+            pos_config.journal_ids:
+            account_journal.journal_ids:
+        pos_config.name:
+            pos_config.name:    # new required
+        pos_config.sequence_id:
+            pos_config.sequence_id:
+            ir_sequence.sequence_ids:
+        pos_config.session_ids: 
+            pos_config.session_ids:
+            pos_session.session_id:
+        pos_config.shop_id:
+            pos_config.shop_id:
+            sale_shop.shop_ids:
+        pos_config.state:
+            pos_config.state: return 'active' #NEW required: required, selection_keys: ['active', 'deprecated', 'inactive']
+        pos_order.id:
+            pos_order.id:
+            pos_order.pos_reference:    #new
+        pos_order.session_id:
+            pos_order.session_id:
+            pos_session.session_id:
+        pos_session.config_id:
+            pos_session.config_id:
+            pos_config.config_ids:
+            pos_session.name:       # new required: required, req_default: /
+            pos_session.start_at:   # new, datetime
+            pos_session.stop_at:    # new, datetime
+            pos_session.state:      # new required: required, selection_keys: ['closed', 'closing_control', 'opened', 'opening_control']
+            product_product.available_in_pos: return true   # new, boolean
+            product_product.to_weight: return true  # new, boolean
+            res_users.ean13:        # new, char
+            res_users.pos_config:
+                res_users.pos_config:   # A VERIFIER  
+        pos_session.user_id:
+            pos_session.user_id:
+            res_users.user_ids:     # 
+        pos_session.order_ids:
+            pos_session.order_ids:
+            pos_order.order_id: 
+        pos_session.statement_ids:
+            pos_session.statement_ids:
+            account_bank_statement.statement_id:
+    account_journal.auto_cash: false    # DEL
+    account_journal.check_dtls: false   # DEL
+
+# module product
+product:
+    product.*:
+    product_product.id:
+        product_product.id:
+        product_product.image:  #new, binary
+    product_product.message_ids:
+        mail_message.message_ids:
+    product_product.product_image: false
+    
+
+# module edi
+edi:
+    edi.*:
+    
+# module purchase
+purchase:
+    purchase.*:
+    purchase_order.dest_address_id:
+        purchase_order.dest_address_id:
+        res_partner.dest_address_ids:
+    purchase_order.journal_id:
+        purchase_order.journal_id:
+        account_journal.journal_ids:
+    purchase_order.message_ids:
+        purchase_order.message_ids:
+        mail_message.message_id:
+    purchase_order.partner_address_id:
+        purchase_order.partner_address_id :     # DEL relation: res.partner.address
+    purchase_order.payment_term_id:
+        purchase_order.payment_term_id:
+        account_payment_term.payment_term_ids:
+    purchase_order.picking_ids:
+        purchase_order.picking_ids:
+        stock_picking_in.picking_id:    
+    purchase_order.state:
+        purchase_order.state:  # ['approved', 'cancel', 'confirmed', 'done', 'draft', 'except_invoice', 'except_picking', 'sent']'
+    purchase_order_line.name:
+        purchase_order.name:       # change type to 'text'
+    purchase_order_line.notes: false
+    purchase_report.dest_address_id:
+        purchase_report.dest_address_id:
+    purchase_report.partner_address_id:
+        purchase_report.partner_address_id:
+    purchase_report.state:
+        purchase_report.state:      # '['approved', 'cancel', 'confirmed', 'done', 'draft', 'except_invoice', 'except_picking']'
+    res_partner.purchase_order_ids:
+        res_partner.purchase_order_ids:
+        purchase_order.purchase_order_ids:   
+    stock_picking_in.purchase_id:
+        stock_picking_in.purchase_id: 
+        purchase_order.purchase_id: 
+
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
