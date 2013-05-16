@@ -1,0 +1,381 @@
+base:
+    res_groups.*:
+    res_groups.__discriminator__:
+        - name
+
+    res_partner_title.*:
+    res_partner_title.__discriminator__:
+        - name
+    res_country.*:
+    res_country.__discriminator__:
+        - code
+
+    # Users
+    res_users.*:
+    res_users.term_id: False
+    res_users.__discriminator__:
+        - login
+    res_users.id:
+        res_users.id:
+    res_users.context_lang:
+        res_partner.lang:
+    res_users.date: False
+    res_users.email: False
+    res_users.menu_tips: False
+    res_users.user_email:
+        res_partner.email:
+    res_users.name:
+        res_partner.name:
+    res_users.active:
+        res_partner.active:
+    res_users.company_id:
+        res_users.company_id:
+        res_partner.company_id:
+    res_users.id:
+        res_users.id:
+        res_users.partner_id:
+        res_partner.notification_email_send: return 'comment'
+        res_partner.id: |
+            i = newid('res_partner')
+            target_rows['res_users']['partner_id'] = i
+            target_rows['res_partner']['id'] = i
+            return i
+    res_users.address_id:
+        # foireux
+        res_partner.id: return newid('res_partner')
+    res_users.login_date:
+        res_users.date:
+
+    # Partners
+    res_partner.*:
+    res_partner.__discriminator__:
+        - name
+    res_partner.allow_refund: False
+    res_partner.producer: False
+    res_partner_address.email:
+        res_partner.email:
+    res_users.context_tz:
+        res_partner.tz:
+    res_partner._:
+        res_partner.is_company: return True
+
+    # address
+    res_partner_address.id:
+        res_partner.id: return newid('res_partner')
+        res_partner.notification_email_send: return 'comment'
+    res_partner_address.contact_id: False
+    res_partner_address.x_openupgrade_job_id: False
+    res_partner_address.location_id: False
+    res_partner_address.country_id:
+        res_partner.country_id:
+        #adding the new fields with default value
+        res_partner.notification_email_send: return 'comment'
+        res_partner.section_id: return ' ' 
+        res_partner.is_company: return False
+        res_partner.use_parent_address: return True # make a function which finds the value in the target database
+    res_partner_address.fax:
+        res_partner.fax:
+    res_partner_address.function:
+        res_partner.function:
+    res_partner_address.mobile:
+        res_partner.mobile:
+    res_partner_address.phone:
+        res_partner.phone:
+    res_partner_address.street:
+        res_partner.street:
+    res_partner_address.street2:
+        res_partner.street2:
+    res_partner_address.type:
+        res_partner.type:
+    res_partner_address.zip:
+        res_partner.zip:
+    res_partner_address.name:
+        res_partner.name: return source_row['name'] or source_row['street'] or source_row['city'] or 'noname'
+    res_partner_address.partner_id:
+        res_partner.parent_id:
+
+    res_company.__discriminator__:
+        - name
+    res_company.*:
+    res_company.logo:
+        res_company.logo_web:
+    res_company.rml_footer1:
+        res_company.rml_footer:
+
+    # Menu
+    ir_ui_menu.*:
+
+    # Tables de jointures
+    res_groups_users_rel.*:
+    res_company_users_rel.*:
+    res_partner_category_rel.*:
+    res_groups_implied_rel.*:
+
+
+# Module mail
+mail:
+    mail.*:
+        
+    mail_message.*:
+ 
+    mail_message.type:
+        mail_message.type: return 'email'
+
+    res_partner.notification_email_send:
+        res_partner.notification_email_send: return 'comment'
+
+    res_users._:
+        res_users.alias_id: return target_rows['res_users'].get('alias_id') or None
+        mail_alias.id: |
+            i = newid('mail_alias')
+            target_rows['res_users']['alias_id'] = i
+            return i
+        mail_alias.alias_model_id: return sql("select id from ir_model where model='res.users'")[0][0]
+        mail_alias.alias_name: return source_row['login']
+        mail_alias.alias_defaults: return {}
+    mail_alias.__discriminator__:
+        - alias_name
+
+# Module account
+account:
+    account_account.*:
+    account_account.__discriminator__:
+        - name
+    account_bank_statement.*:
+
+    account_chart_template.*:
+    account_chart_template.property_reserve_and_surplus_account: False
+
+    account_invoice.*:
+    account_invoice.address_contact_id: False
+    account_invoice.address_invoice_id: False
+    account_invoice.id:
+        account_invoice.id:
+        account_invoice.send: #new:true or false
+        account_invoice.supplier_invoice_number: #new
+
+    account_invoice_line.*:
+    account_invoice_line.name:
+        account_invoice_line.name: #cmt changer le type char en text ??
+    account_invoice_line.note: False
+
+    account_invoice_report.*:
+    account_invoice_report.address_contact_id: False
+    account_invoice_report.address_invoice_id: False
+    account_invoice_report.delay_to_pay: False
+    account_invoice_report.due_delay: False
+
+    account_invoice_tax.*:
+    
+    account_journal.*:
+    account_journal.__discriminator__:
+        - code
+    
+    account_move_reconcile.*:
+
+    account_tax.*:
+
+    res_company._:
+        res_company.expects_chart_of_accounts: return True # car on suppose que le plan comptable est déjà installé
+        res_company.tax_calculation_rounding_method: return 'round_per_line'
+
+    account_account_type.*:
+    account_account_type.name:
+        account_account_type.report_type: return "receivable"
+
+    account_journal_view.*:
+    account_journal_view.view_id: False
+    account_journal_column.*:
+
+    account_move.*:
+    account_move.__discriminator__:
+        - name
+        - ref
+        - date
+    account_move_line.*:
+    account_move_line.__discriminator__:
+        - name
+        - ref
+        - date
+
+
+# Module account_accountant
+account_accountant:
+    account_accountant.*:
+
+
+# Module account_analytic_analysis
+account_analytic_analysis:
+    account_analytic_analysis.*:
+    account_analytic_account.*:
+    account_analytic_account.id:
+        accound_analytic_account.id:
+        account_analytic_account.fix_price_invoices:    #new: boolean
+        account_analytic_account.hours_qtt_est:    #new: float
+        account_analytic_account.invoice_on_timesheets:    #new: boolean
+
+
+# Module account_analytic_default
+account_analytic_default:
+    account_analytic_default.*:
+
+
+# Module account_analytic_plans
+account_analytic_plans:
+    account_analytic_plans.*:
+
+
+# Module account_anglo_saxon
+account_anglo_saxon:
+    account_anglo_saxon.*:
+
+
+# Module account_asset
+account_asset:
+    account_asset.*:
+    account_asset_depreciation_line.*:
+    account_asset_depreciation_line.depreciation_date:
+        account_asset_depreciation_line.depreciation_date: #change type char to date
+
+
+# Module account_bank_statement_extensions
+account_bank_statement_extensions:
+    account_bank_statement_extensions.*:
+    account_bank_statement_line.*:
+    account_bank_statement_line.journal_id:
+        account.account_bank_statement_extensions:
+
+
+# Module account_budget
+account_budget:
+    account_budget.*:
+
+
+# Module account_cancel
+account_cancel:
+    account_cancel.*:
+
+
+# Module account_chart
+account_chart:
+    account_chart.*:
+
+
+# Module account_check_writing
+account_check_writing:
+    account_check_writing.*:
+
+
+# Module account_followup
+account_followup:
+    account_followup.*:
+    account_followup_followup.*:
+    account_followup_followup.description: False
+    account_followup_followup_line.*:
+    account_followup_followup_line.delay:
+        account_followup_followup_line.delay: source_row['delay'] or 0
+    res_company.follow_up_msg:
+        account_followup_followup.id: |
+            followup_id = newid('account_followup_followup')
+            line_id = newid('account_followup_followup_line')
+            target_rows['account_followup_followup_line']['followup_id'] = followup_id
+            return followup_id
+        account_followup_followup_line.id: |
+            target_rows['account_followup_followup_line']['name'] = u'migrated followup'
+            target_rows['account_followup_followup_line']['description'] = source_row['follow_up_msg']
+            return line_id
+
+# Module account_payment
+account_payment:
+    account_payment.*:
+
+
+# Module account_sequence
+account_sequence:
+    account_sequence.*:
+
+
+# Module account_test
+account_test:
+    account_test.*:
+
+
+# Module account_voucher
+account_voucher:
+    account_voucher.*:
+
+
+# Module analytic
+analytic:
+    analytic.*:
+    account_analytic_account.*:
+    account_analytic_account.contact_id:
+        account_analytic_account.contact_id:    #DEL relation: res.partner.address
+    account_analytic_account._:
+        account_analytic_account.type: return 'normal' #now required, default = normal
+
+
+# Module analytic_contract_hr_expense
+analytic_contract_hr_expense:
+    analytic_contract_hr_expense.*:
+    account_analytic_account.id:
+        account_analytic_account.id:
+        account_analytic_account.charge_expenses:   # new, boolean
+        account_analytic_account.est_expenses:    # new, float
+
+
+# Module analytic_user_function
+analytic_user_function:
+    analytic_user_function.*:
+    analytic_user_funct_grid.id:
+        analytic_user_funct_grid.id:
+        analytic_user_funct_grid.price:     #NEW required: required (float)
+
+
+# Module sale
+sale:
+    sale.*:
+    sale_order.*:
+    sale_order_line.notes: False
+
+# Module stock
+stock:
+    stock.*:
+
+# module point_of_sale
+point_of_sale:
+    point_of_sale.*:
+    account_bank_statement.pos_session_id:
+        account_bank_statement.pos_session_id:
+
+    pos_order.id:
+        pos_order.id:
+        pos_order.pos_reference:    #new
+    product_product._:
+        product_product.available_in_pos: return True
+    account_journal.auto_cash: __forget__
+    account_journal.check_dtls: __forget__
+
+
+# module product
+product:
+    product_product.*:
+    product_template.*:
+    product_product.id:
+        product_product.id:
+        product_product.image:  #new, binary
+    product_product.message_ids:
+        mail_message.message_ids:
+    product_product.product_image: False
+
+
+# module edi
+edi:
+    edi.*:
+
+
+# module purchase
+purchase:
+    purchase_order.*:
+    purchase_order_line.*:
+    purchase_order_line.notes: __forget__
