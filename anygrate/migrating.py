@@ -10,7 +10,7 @@ from .processing import CSVProcessor
 from .depending import get_dependencies
 from .depending import get_fk_to_update
 import logging
-from os.path import basename, join, abspath, dirname
+from os.path import basename, join, abspath, dirname, exists
 
 HERE = dirname(__file__)
 logging.basicConfig(level=logging.DEBUG)
@@ -89,6 +89,7 @@ def migrate(source_db, target_db, source_tables, mapping_name, excluded_tables=N
     # construct the mapping and the csv processor
     # (TODO? autodetect mapping file with source and target db)
     print('Exporting tables as CSV files...')
+    source_tables = [model.replace('.', '_') for model in source_models]
     filepaths = export_to_csv(source_tables, target_dir, source_connection)
     mappingfile = join(HERE, 'mappings', mapping_name)
     mapping = Mapping(target_modules, mappingfile)
@@ -114,12 +115,11 @@ def migrate(source_db, target_db, source_tables, mapping_name, excluded_tables=N
 
     # execute deferred updates for preexisting data
     print(u'Updating pre-existing data...')
-    update_filenames = [
-        join(target_dir, table + '.update2.csv')
-        for table in target_tables
-    ]
-    for update_filename in update_filenames:
-        filepath = join(target_dir, update_filename)
+    for table in target_tables:
+        filepath = join(target_dir, table + '.update2.csv')
+        if not exists(filepath):
+            LOG.warn(u'Not updating %s as it was not imported', table)
+            continue
         processor.update_one(filepath, target_connection)
 
     # \o/
