@@ -1,0 +1,842 @@
+base:
+    ir_sequence.*:
+    ir_sequence.number_next:
+        ir_sequence.number_next: |
+            # don't conflict with the next statement (could be avoided with ordereddict)
+            return target_rows['ir_sequence'].get('number_next', source_row['number_next'])
+    ir_sequence.id:
+        ir_sequence.id: |
+            # we don't merge sequences, it's too painful
+            sequence_name = 'ir_sequence_' + source_row['id'].zfill(3)
+            sequence_exists = sql('source', 'select * from pg_class where relname=(%s)', (sequence_name,))
+            if sequence_exists:
+                last_value = sql('source', 'select last_value from %s' % sequence_name)[0][0]
+                target_rows['ir_sequence']['number_next'] = last_value + 1
+                sequence_id = int(source_row['id']) + self.mapping.last_id
+                sql('target',
+                    "create sequence ir_sequence_%03d increment by %%s start with %%s" % sequence_id,
+                    (int(source_row['number_increment']), last_value))
+            return source_row['id']
+    ir_sequence.company_id:
+        # force a company_id and assume 1. Will be offset anyway in multicompany case
+        ir_sequence.company_id: return 1
+
+    ir_mail_server.*:
+    ir_mail_server._:
+        ir_mail_server.active: return False
+    ir_attachment.*:
+    ir_attachment.name: # name is unique now...
+        ir_attachment.name: return source_row['id'] + ' - ' + source_row['name']
+    ir_attachment.res_id:
+        ir_attachment.res_id: __ref__ res_model
+
+
+    res_partner_title.*:
+    res_partner_title.create_uid:
+        res_partner_title.create_uid: __defer__
+    res_partner_title.write_uid:
+        res_partner_title.write_uid: __defer__
+    res_partner_title.__discriminator__:
+        - name
+
+    res_country.*:
+    res_country.create_uid:
+        res_country.create_uid: __defer__
+    res_country.__discriminator__:
+        - code
+
+    res_country_state.*:
+    res_country_state.write_uid:
+        res_country_state.write_uid: __defer__
+    res_country_state.create_uid:
+        res_country_state.create_uid: __defer__
+
+    res_country_state.__discriminator__:
+        - code
+
+    res_currency.*:
+    res_currency.company_id: __forget__
+    res_currency.__discriminator__:
+        - name
+
+    # Users
+    res_users.*:
+    res_users.__discriminator__:
+        - login
+    res_users.id:
+        res_users.id:
+    res_users.context_lang:
+        res_partner.lang:
+    res_users.email: __forget__
+    res_users.date: __forget__
+    res_users.menu_tips: __forget__
+    res_users.context_department_id: __forget__
+    res_users.context_project_id: __forget__
+    res_users.context_section_id: __forget__
+    res_users.user_email:
+        res_partner.email:
+    res_users.name:
+        res_partner.name:
+        res_partner.display_name:
+    res_users.active:
+        res_partner.active:
+    res_users.company_id:
+        res_users.company_id:
+        res_partner.company_id:
+    res_users.create_uid:
+        res_users.create_uid: __defer__
+    res_users.write_uid:
+        res_users.write_uid: __defer__
+    res_users.id:
+        res_users.id:
+        res_users.partner_id:
+        res_partner.id: |
+            i = newid()
+            target_rows['res_users']['partner_id'] = i
+            target_rows['res_partner']['id'] = i
+            target_rows['res_partner']['name'] = source_row['name']
+            target_rows['res_partner']['email'] = source_row['user_email']
+            return i
+    res_users.login_date:
+        res_users.date:
+    res_users.address_id: __forget__
+
+    res_company_users_rel.*:
+    res_company_users_rel.__discriminator__:
+        - cid
+        - user_id
+
+    # Partners
+    res_partner.*:
+    res_partner.name:
+        res_partner.name:
+        res_partner.display_name:
+    res_partner.__discriminator__:
+        - name
+    res_partner.user_id:
+        res_partner.user_id: __defer__
+    res_partner.create_uid:
+        res_partner.create_uid: __defer__
+    res_partner.write_uid:
+        res_partner.write_uid: __defer__
+    res_users.context_tz:
+        res_partner.tz:
+    res_partner._:
+        res_partner.is_company: return True
+
+    # addresses
+    res_partner_address.id:
+        res_partner.id: __moved__
+    res_partner_address.create_uid:
+        res_partner.create_uid: __defer__
+    res_partner_address.write_uid:
+        res_partner.write_uid: __defer__
+    res_partner_address.*:
+        res_partner.*:
+    res_partner_address.contact_id: __forget__
+    res_partner_address.location_id: __forget__
+    res_partner_address.country_id:
+        res_partner.country_id:
+        #adding the new fields with default value
+        res_partner.is_company: return False
+        res_partner.use_parent_address: return False
+    res_partner_address.name:
+        res_partner.name: return source_row['name'] or source_row['street'] or source_row['city'] or ('address' + str(source_row['id']))
+        res_partner.display_name: return source_row['name'] or source_row['street'] or source_row['city'] or ('address' + str(source_row['id']))
+    res_partner_address.partner_id:
+        res_partner.parent_id:
+
+    res_partner_bank.*:
+    res_partner_bank.__discriminator__:
+        - name
+    res_partner_bank.journal_id:
+        res_partner_bank.journal_id: __defer__
+
+    res_company.__discriminator__:
+        - name
+    res_company.*:
+    res_company.stylesheet_id: __forget__
+    res_company.code: __forget__
+    res_company.pad_index: __forget__
+    res_company.pad_url_template: __forget__
+    res_company.logo:
+        res_company.logo_web:
+    res_company.rml_footer1:
+        res_company.rml_footer:
+
+    res_bank.*:
+    res_bank.code: __forget__
+    res_bank.__discriminator__:
+        - name
+    res_partner_category.*:
+    res_partner_category.__discriminator__:
+        - name
+
+    res_partner_category_rel.*:
+
+    # workflows (we don't migrate workflows, only instances and workitems)
+    wkf_instance.*:
+    wkf_instance.wkf_id:
+        wkf_instance.wkf_id: |
+            self.fk_mapping.setdefault('wkf', {})
+            wkf_id = source_row['wkf_id']
+            if wkf_id not in self.fk_mapping['wkf']:
+                model = sql('source', "select osv from wkf where id=(%s)", (wkf_id,))[0][0]
+                target_wkf_id = sql('target', "select id from wkf where osv=(%s)", (model,))
+                self.fk_mapping['wkf'][wkf_id] = target_wkf_id and target_wkf_id[0][0] or ''
+                if not self.fk_mapping['wkf'][wkf_id]:
+                    raise UserWarning('Could not migrate workflow instance: %s' % source_row)
+            return self.fk_mapping['wkf'][wkf_id]
+    wkf_instance.uid:
+        wkf_instance.uid: __fk__ res_users
+    wkf_instance.res_id:
+        wkf_instance.res_id: __ref__ res_type
+
+    wkf_workitem.*:
+    wkf_workitem.act_id:
+        wkf_workitem.act_id: |
+            self.fk_mapping.setdefault('wkf_activity', {})
+            act_id = source_row['act_id']
+            if act_id not in self.fk_mapping['wkf_activity']:
+                wf, act = sql('source', "select w.name, a.name from wkf w, wkf_activity a where a.wkf_id=w.id and a.id=(%s)", (act_id,))[0]
+                target_act_id = sql('target', "select a.id from wkf w, wkf_activity a where w.name=(%s) and a.wkf_id=w.id and a.name=(%s)", (wf, act))
+                self.fk_mapping['wkf_activity'][act_id] = target_act_id and target_act_id[0][0] or ''
+                if not self.fk_mapping['wkf_activity'][act_id]:
+                    raise UserWarning('Could not migrate workflow workitem: %s' % source_row)
+            return self.fk_mapping['wkf_activity'][act_id]
+
+    wkf_triggers.*:
+    wkf_triggers.res_id:
+        wkf_triggers.res_id: __ref__ model
+
+
+auth_ldap:
+    res_company_ldap.*:
+
+procurement:
+    procurement_order.*:
+
+email_template:
+    email_template.*:
+    email_template.__discriminator__:
+        - name
+    email_template.body_html: __forget__
+    email_template.body_text:
+        email_template.body_html: return source_row['body_html'] or source_row['body_text'].replace('\n','<br/>')
+    email_template.date: __forget__
+    email_template.email_bcc: __forget__
+    email_template.from_account: __forget__
+    email_template.headers: __forget__
+    email_template.message_id: __forget__
+    email_template.model_int_name: __forget__
+    email_template.original: __forget__
+    email_template.partner_id: __forget__
+    email_template.references: __forget__
+    email_template.res_id: __forget__
+    email_template.state: __forget__
+    email_template.subtype: __forget__
+    email_template.table_html: __forget__
+    email_template.template_language: __forget__
+    email_template.track_campaign_item: __forget__
+    email_template.user_id: __forget__
+    email_template.model_id:
+        email_template.model_id: |
+            name = sql('source', 'select name from ir_model where id=%s', (source_row['model_id'],))
+            model_id = sql('target', 'select id from ir_model where name=%s', (name[0][0],)) if name and name[0] else None
+            return model_id[0][0] if model_id and model_id[0] else None
+
+    email_template.ref_ir_value:
+        email_template.ref_ir_value: return None
+    email_template.ref_ir_act_window:
+        email_template.ref_ir_act_window: return None
+    email_template._:
+        email_template.email_recipients: return None
+
+
+mail:
+    mail.*:
+
+    mail_message.*:
+
+    mail_message.id:  # split
+        mail_mail.mail_message_id:
+        mail_message.id:
+        mail_message_res_partner_rel.mail_message_id:
+    mail_message.partner_id:  # turned into a m2m
+        mail_message_res_partner_rel.res_partner_id:
+    mail_message.res_id:  # fake fk whose table is given in column "model"
+        mail_message.res_id: __ref__ model
+    mail_message._:
+        mail_message.type: return 'comment'
+    mail_message.subject:  # fix subject differing just by a newline characters from the body
+        mail_message.subject: return None if source_row['subject'].split()[:10] == source_row['body_text'].split()[:10] else source_row['subject']
+    mail_message.email_bcc: __forget__
+    mail_message.ref_id: __forget__
+    mail_message.email_from:
+        mail_mail.email_from:
+        mail_message.email_from:
+    mail_message.email_to:
+        mail_mail.email_to:
+    mail_message.email_cc:
+        mail_mail.email_cc:
+    mail_message.body_text:
+        mail_mail.body_html: return source_row['body_text'] and source_row['body_text'].replace('\n','<br/>') or None
+    mail_message.description:
+        mail_mail.body_html: return source_row['body_text'] and source_row['body_text'].replace('\n','<br/>') or None
+    mail_message.user_id: __forget__
+    #mail_message.user_id:  # TODO try to restore the user_id
+    #    mail_message.author_id:
+    mail_message.references:
+        mail_mail.references:
+    mail_message.history: __forget__  # from 6.0
+    mail_message.server_type: __forget__  # from 6.0
+    mail_message.auto_delete:
+        mail_mail.auto_delete:
+    mail_message.body_html:
+        mail_message.body: return source_row['body_html'] or source_row['body_text'].replace('\n','<br/>')
+        mail_mail.body_html: return source_row['body_html'] or source_row['body_text'].replace('\n','<br/>')
+    mail_message.mail_server_id:
+        mail_mail.mail_server_id:
+    mail_message.headers: __forget__
+    mail_message.subtype: __forget__
+    mail_message.original: __forget__
+    mail_message.state:
+        mail_mail.state:
+    mail_message.reply_to:
+        mail_mail.reply_to:
+
+
+fetchmail:
+    fetchmail_server.*:
+    mail_message.fetchmail_server_id:
+        mail_mail.fetchmail_server_id:
+
+
+
+
+
+
+    res_partner.notification_email_send:
+        res_partner.notification_email_send: return 'comment'
+
+    res_partner._:
+        res_partner.notification_email_send: return 'comment'
+
+    res_users._:
+        res_users.alias_id: return target_rows['res_users'].get('alias_id')
+        mail_alias.id: |
+            i = newid()
+            target_rows['res_users']['alias_id'] = i
+            return i
+        mail_alias.alias_model_id: return sql('target', "select id from ir_model where model='res.users'")[0][0]
+        mail_alias.alias_name: return source_row['login']
+        mail_alias.alias_defaults: return {}
+        res_partner.notification_email_send: return 'comment'
+
+    res_partner_address._:
+        res_partner.notification_email_send: return 'comment'
+
+    mail_alias.__discriminator__:
+        - alias_name
+
+account:
+    account_account.*:
+    account_account.__discriminator__:
+        - code
+        - company_id
+    account_tax_code.*:
+    account_tax_code.__discriminator__:
+        - code
+        - company_id
+    account_period.*:
+    account_period.__discriminator__:
+        - name
+        - company_id
+
+    account_fiscalyear.*:
+    account_fiscalyear.__discriminator__:
+        - code
+        - company_id
+    account_fiscalyear.end_journal_period_id:
+        account_fiscalyear.end_journal_period_id: __defer__
+
+    account_financial_report.*:
+    account_account_financial_report.*:
+    account_fiscal_position.*:
+    account_fiscal_position.__discriminator__:
+        - name
+        - company_id
+    account_bank_statement.*:
+    account_bank_statement.company_id:
+        account_bank_statement.company_id: __fk__ res_company  # (related with store)
+    account_bank_statement.balance_end_cash: __forget__
+    account_bank_statement.shop_id: __forget__  # create pos_sessions?
+
+    account_chart_template.*:
+    account_chart_template.property_reserve_and_surplus_account: __forget__
+
+    account_invoice.*:
+    account_invoice.address_contact_id: __forget__
+    account_invoice.address_invoice_id: __forget__
+
+    account_invoice_line.*:
+    account_invoice_line_tax.*:
+    account_invoice_line.name:
+        account_invoice_line.name:
+    account_invoice_line.note: __forget__
+    # deprecated account_invoice_layout
+    account_invoice_line.state: __forget__
+    account_invoice_line.sequence: __forget__
+    account_invoice_line.functional_field: __forget__
+
+    account_invoice_report.*:
+    account_invoice_report.address_contact_id: __forget__
+    account_invoice_report.address_invoice_id: __forget__
+    account_invoice_report.delay_to_pay: __forget__
+    account_invoice_report.due_delay: __forget__
+
+    account_invoice_tax.*:
+
+    account_journal.*:
+    account_journal.__discriminator__:
+        - code
+        - company_id
+    account_journal.view_id: __forget__
+
+    account_move_reconcile.*:
+
+    account_tax.*:
+    account_tax.__discriminator__:
+        - name
+        - company_id
+
+    res_company._:
+        res_company.expects_chart_of_accounts: return True
+        res_company.tax_calculation_rounding_method: return 'round_per_line'
+
+    account_account_type.*:
+    account_account_type.sign: __forget__
+    account_account_type._:
+        account_account_type.report_type: |
+            return {
+                'receivable': 'asset',
+                'view': 'none',
+                'payable': 'liability',
+                'liability': 'liability',
+                'bank': 'asset',
+                'cash': 'asset',
+                'asset': 'asset',
+                'income': 'income',
+                'expense': 'expense',
+                'tax': 'expense',
+                'equity': 'liability',
+                'check': 'asset'
+            }.get(source_row['code'], 'none')
+    account_account_type.__discriminator__:
+        - name
+
+    account_journal_column.*:
+
+    account_move.*:
+    account_move.company_id:
+        account_move.company_id: __fk__ res_company  # (related with store)
+    account_move_line.*:
+    account_move_line.company_id:
+        account_move_line.company_id: __fk__ res_company  # (related with store)
+    account_move_line.journal_id:
+        account_move_line.journal_id: __fk__ account_journal  # (related with store)
+    account_move_line.period_id:
+        account_move_line.period_id: __fk__ account_period  # (related with store)
+    account_payment_term.*:
+    account_payment_term.__discriminator__:
+        - name
+    account_journal_period.*:
+    account_journal_period.__discriminator__:
+        - name
+    account_account_tax_default_rel.*:
+    account_account_tax_default_rel.__discriminator__:
+        - account_id
+        - tax_id
+    product_taxes_rel.*:
+    product_taxes_rel.__discriminator__:
+        - prod_id
+        - tax_id
+    product_supplier_taxes_rel.*:
+    product_supplier_taxes_rel.__discriminator__:
+        - prod_id
+        - tax_id
+
+account_accountant:
+    account_accountant.*:
+
+
+account_analytic_analysis:
+    account_analytic_analysis.*:
+    account_analytic_account.*:
+    account_analytic_account._:
+        account_analytic_account.charge_expenses:
+        account_analytic_account.est_expenses:
+        account_analytic_account.type: return 'normal'
+    account_analytic_account.contact_id: __forget__
+    account_analytic_account.id:
+        account_analytic_account.id:
+
+
+account_analytic_default:
+    account_analytic_default.*:
+
+
+account_analytic_plans:
+    account_analytic_plans.*:
+
+
+account_anglo_saxon:
+    account_anglo_saxon.*:
+
+
+account_report_company:
+    res_users.name:
+        res_partner.display_name:
+    res_partner.name:
+        res_partner.display_name:
+    res_partner_address.name:
+        res_partner.display_name: return source_row['name'] or source_row['street'] or source_row['city'] or ('address' + str(source_row['id']))
+
+
+project:
+    account_analytic_journal.*:
+    account_analytic_journal.__discriminator__:
+        - name
+    project_task.*:
+    project_project.*:
+    project_task.type_id: __forget__
+    project_project.warn_customer: __forget__
+    project_project.warn_footer: __forget__
+    project_project.warn_header: __forget__
+    project_project.warn_manager: __forget__
+    project_project._:
+        mail_alias.id: |
+            i = newid()
+            target_rows['project_project']['alias_id'] = i
+            return i
+        mail_alias.alias_model_id: return sql('target', "select id from ir_model where model='project.project'")[0][0]
+        mail_alias.alias_name: return 'project' + str(source_row['id'])
+        mail_alias.alias_defaults: return {}
+        project_project.alias_model: return 'project.task'
+        project_project.alias_id: return target_rows['project_project'].get('alias_id')
+        project_project.privacy_visibility: return 'followers'
+        project_project.state: return 'open'
+
+    # deprecated module project_planning
+    project_task.planning_line_id: __forget__
+    # deprecated module project_scrum
+    project_task.product_backlog_id: __forget__
+    project_task.sprint_id: __forget__
+    project_project.product_owner_id: __forget__
+    project_project.reply_to: __forget__
+    project_project.scrum: __forget__
+    project_project.sprint_size: __forget__
+
+project_mrp:
+    procurement_order.task_id:
+        procurement_order.task_id: __defer__
+        procurement_order.sale_line_id: __defer__
+
+account_asset:
+    account_asset.*:
+    account_asset_depreciation_line.*:
+    account_asset_depreciation_line.depreciation_date:
+        account_asset_depreciation_line.depreciation_date: #change type char to date
+
+
+account_bank_statement_extensions:
+    account_bank_statement_extensions.*:
+    account_bank_statement_line.*:
+    account_bank_statement_line.journal_id:
+        account.account_bank_statement_extensions:
+
+
+account_budget:
+    account_budget.*:
+
+
+account_cancel:
+    account_cancel.*:
+
+
+account_chart:
+    account_chart.*:
+
+
+account_check_writing:
+    account_check_writing.*:
+
+
+account_followup:
+    res_company.follow_up_msg: __forget__
+    res_company.planning_time_mode_id: __forget__
+    account_followup_print.*:
+
+account_payment:
+    account_payment.*:
+
+
+account_sequence:
+    account_sequence.*:
+    account_sequence_fiscalyear.*:
+
+
+account_test:
+    account_test.*:
+
+
+account_voucher:
+    account_voucher.*:
+    account_voucher._:
+        account_voucher.active:
+    account_voucher_line.*:
+
+
+analytic:
+    analytic.*:
+
+
+analytic_contract_hr_expense:
+    analytic_contract_hr_expense.*:
+
+
+
+analytic_user_function:
+    analytic_user_function.*:
+    analytic_user_funct_grid.id:
+        analytic_user_funct_grid.id:
+        analytic_user_funct_grid.price:
+
+crm:
+    crm_case.*:
+    crm_case_categ.*:
+    crm_case_categ.object_id: __forget__
+    crm_case_channel.*:
+    crm_case_section.*:
+    crm_case_section.__discriminator__:
+        - code
+    crm_case_section.allow_unlink: __forget__
+    crm_case_section.create_uid:
+        crm_case_section.create_uid: __defer__
+    crm_case_section.write_uid:
+        crm_case_section.write_uid: __defer__
+    crm_case_section._:
+        crm_case_section.alias_id: return target_rows['crm_case_section'].get('alias_id')
+        mail_alias.id: |
+            i = newid()
+            target_rows['crm_case_section']['alias_id'] = i
+            return i
+        mail_alias.alias_model_id: return sql('target', "select id from ir_model where model='crm.case.section'")[0][0]
+        mail_alias.alias_name: return source_row['name']
+        mail_alias.alias_defaults: return {}
+    crm_case_stage.*:
+    crm_case_stage.__discriminator__:
+        - name
+    crm_case_stage._:
+        crm_case_stage.state: return 'open'
+        crm_case_stage.type: return 'opportunity'
+    crm_phonecall.*:
+    crm_segmentation.*:
+
+    crm_lead.*:
+    crm_lead.birthdate: __forget__
+    crm_lead.categ_id: __forget__
+    crm_lead.contact_id: __forget__
+    crm_lead.email: __forget__
+    crm_lead.location_id: __forget__
+    crm_lead.optin: __forget__
+    crm_lead.optout:
+        crm_lead.opt_out:
+    crm_lead.state:
+        crm_lead.state: return source_row['state'] or 'cancel'
+    crm_lead.partner_address_id: __forget__
+    crm_add_note.*:
+        mail_message.*:
+    crm_add_note.state: __forget__
+
+sale:
+    sale_order.*:
+    sale_order.company_id:
+        sale_order.company_id: __fk__ res_company
+    sale_order.partner_order_id: __forget__
+    sale_order.partner_shipping_id:
+        sale_order.partner_shipping_id: __fk__ res_partner_address
+    sale_order.partner_invoice_id:
+        sale_order.partner_invoice_id: __fk__ res_partner_address
+    sale_shop.*:
+    sale_shop.__discriminator__:
+        - name
+    sale_order_line.*:
+    sale_order_line.notes: __forget__
+    sale_shop.shop_registry: __forget__
+
+sale_crm:
+    sale_order.categ_id: # m2o turned into a m2m
+        sale_order_category_rel.category_id: return source_row['categ_id']
+        sale_order_category_rel.order_id: return source_row['id']
+
+stock:
+    stock_move.*:
+    stock_move.sale_line_id:
+        stock_move.sale_line_id: __defer__
+    stock_move.partner_id: __forget__
+    stock_move.address_id:
+        stock_move.partner_id: __fk__ res_partner_address
+    stock_picking.*:
+    stock_picking.partner_id: __forget__
+    stock_picking.address_id:
+        stock_picking.partner_id: __fk__ res_partner_address
+    stock_inventory.*:
+    stock_inventory_line.*:
+    stock_tracking.*:
+    stock_inventory_merge.*:
+    stock_location.*:
+    stock_location.address_id:
+        stock_location.partner_id: __fk__ res_partner_address
+    stock_location.__discriminator__:
+        - complete_name
+        - company_id
+    stock_warehouse.*:
+    stock_warehouse.__discriminator__:
+        - name
+        - company_id
+    stock_warehouse.lot_return_id: __forget__
+    stock_warehouse.partner_address_id:
+        stock_warehouse.partner_id: __fk__ res_partner_address
+    stock_journal.*:
+    stock_journal.__discriminator__:
+        - name
+
+point_of_sale:
+    pos_order.*:
+    pos_order_line.*:
+    pos_category.*:
+    pos_category.__discriminator__:
+        - name
+    account_bank_statement.pos_session_id:
+        account_bank_statement.pos_session_id:
+
+    pos_order.id:
+        pos_order.id:
+        pos_order.pos_reference: #new
+    product_product._:
+        product_product.available_in_pos: return True
+    account_journal.auto_cash: __forget__
+    account_journal.check_dtls: __forget__
+
+
+product:
+    product_ul.*:
+    product_product.*:
+    product_product.product_image_small:
+        product_product.image_small:
+    product_product.product_image:
+        product_product.image:
+    product_product.__discriminator__:
+        - name_template
+    product_template.*:
+    product_template.__discriminator__:
+        - name
+    product_template.company_id: __forget__
+    product_uom.*:
+    product_uom.__discriminator__:
+        - name
+    product_uom_categ.*:
+    product_uom_categ.__discriminator__:
+        - name
+    product_category.*:
+    product_category.__discriminator__:
+        - name
+    product_pricelist.*:
+    product_pricelist.__discriminator__:
+        - name
+    product_supplierinfo.*:
+    product_product.message_ids:
+        mail_message.message_ids:
+    product_product.product_image: __forget__
+
+
+purchase:
+    purchase_order.*:
+    purchase_order.partner_address_id: __forget__
+    purchase_order_line.*:
+    purchase_order_line.notes: __forget__
+
+hr:
+    hr_expense_expense.*:
+    hr_expense_expense.invoice_id: __forget__
+    hr_expense_expense.account_move_id:
+        # Link expense to account move as the intermediate 
+        # invoice step has been removed in 7.0.
+        # XXX This will not work if the expense is invoiced but 
+        #     the invoice is still in draft state, in which
+        #     case the move does not exist yet.
+        hr_expense_expense.account_move_id: |
+            invoice_id = source_row['invoice_id']
+            if invoice_id:
+                r = sql('source', """select m.id from account_invoice i
+                                    left join account_move m on m.id = i.move_id
+                                    where i.id = %s""" % (invoice_id,))
+                return r and r[0][0]
+    hr_expense_expense.journal_id:
+        # Link expense to account journal.
+        hr_expense_expense.journal_id: |
+            invoice_id = source_row['invoice_id']
+            if invoice_id:
+                r = sql('source', """select journal_id from account_invoice
+                                    where id = %s""" % (invoice_id,))
+                return r and r[0][0]
+    hr_expense_expense.ref: __forget__
+    hr_expense_line.*:
+    hr_expense_line.uom_id:
+        hr_expense_line.uom_id: |
+            # uom_id is required and defaults to Unit(s) in 7.0
+            return source_row['uom_id'] or \
+                sql('source', "select res_id from ir_model_data where module='product' and name='product_uom_unit'")[0][0]
+    hr_employee.*:
+    hr_employee.children: __forget__
+    hr_employee.manager: __forget__
+    hr_employee.photo:
+        hr_employee.image:
+    hr_department.*:
+
+hr_recruitment:
+    hr_recruitment_source.*:
+    hr_recruitment_stage.*:
+    hr_recruitment_stage._:
+        hr_recruitment_stage.state: return 'draft'  # new
+        hr_recruitment_stage.fold: return False  # new
+    hr_recruitment_degree.*:
+    hr_recruitment_degree.__discriminator__:
+        - name
+    hr_applicant.*:
+    hr_applicant.partner_id: __forget__
+    hr_applicant.partner_address_id:
+        hr_applicant.partner_id: __fk__ res_partner_address
+    hr_job.*:
+    hr_job._:
+        hr_job.alias_id: return target_rows['hr_job'].get('alias_id')
+        mail_alias.id: |
+            i = newid()
+            target_rows['hr_job']['alias_id'] = i
+            return i
+        mail_alias.alias_model_id: return sql('target', "select id from ir_model where model='hr.job'")[0][0]
+        mail_alias.alias_name: return source_row['name'] + '_' + source_row['id']
+        mail_alias.alias_defaults: return {}
+
+
+resource:
+    resource_resource.*:
+
+document:  # also see ir_attachment migration
+    ir_attachment.*:
+    ir_attachment.datas: # installing this module disables the 'datas' column
+        ir_attachment.db_datas: return source_row['datas'] or source_row['db_datas']
+
+
+
